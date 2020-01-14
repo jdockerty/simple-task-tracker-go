@@ -11,19 +11,24 @@ import (
 	"strings"
 )
 
+// The Task struct defines a particular task, this is used for the JSON representation.
 type Task struct {
 	TaskName    string
 	TaskSummary string
 	CompletedBy string
 }
 
+// The Tasks type is a slice of the Task struct.
 type Tasks []Task
 
+// Constants for the current OS runtime and name of the JSON file.
 const (
 	currentRuntime string = runtime.GOOS
 	jsonFileName string = `MyTasks.json`
 )
 
+// addNewTasks is used to create a number of tasks, that the user specifies, and then write these
+// to the JSON file. The user is prompted for the appropriate input.
 func addNewTasks() {
 	fmt.Println("How many tasks would you like to add?")
 	fmt.Print("Enter a value: ")
@@ -51,15 +56,8 @@ func addNewTasks() {
 
 }
 
-func jsonFileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
-}
-
-
+// writeToJSONFile will write to the JSON file containing the tasks, or append to it if the appendToFile
+// variable is set to true. 
 func writeToJSONFile(taskList Tasks, appendToFile bool) {
 	if appendToFile {
 		jsonFile, err := os.OpenFile(jsonFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
@@ -94,11 +92,13 @@ func writeToJSONFile(taskList Tasks, appendToFile bool) {
 	}
 }
 
+// jsonFormatToString returns string with the standard JSON indentation, this is used for printing JSON neatly to the console.
 func jsonFormatToString(i interface{}) string {
 	jsonData, _ := json.MarshalIndent(i, "", "\t")
 	return string(jsonData) + "\n"
 }
 
+// viewAllTasks opens the JSON file and prints the location of the file for debugging purposes and the tasks contained within it.
 func viewAllTasks() {
 	var myTasks Tasks
 
@@ -116,6 +116,8 @@ func viewAllTasks() {
 	fmt.Println(jsonFormatToString(myTasks))
 }
 
+// readUserInput returns string representation with what the user has entered via standard input.
+// The trailing newlines are removed before the string is returned, this includes whitespace on Windows OS.
 func readUserInput() string {
 	reader := bufio.NewReader(os.Stdin)
 	userInput, _ := reader.ReadString('\n')
@@ -127,7 +129,8 @@ func readUserInput() string {
 	return userInput
 }
 
-// Could maybe use this function with viewAllTasks too? fmt.print(jsonformattostring(readjson())) ??
+// readJSONToTasks returns the Tasks slice. This opens the file and reads the contents of the file to a byte array.
+// This byte array is then unmarshalled into the empty Tasks variable and returned.
 func readJSONToTasks() Tasks {
 	var currentTasks Tasks
 	jsonFile, err := os.Open(jsonFileName)
@@ -140,6 +143,9 @@ func readJSONToTasks() Tasks {
 	return currentTasks
 }
 
+// getIndex returns an integer value for the index position of a given taskName in the slice of Tasks.
+// This works by iterating over the tasks within the slice and matching the appropriate index value
+// with the parameter of the task name which is being searched for.
 func getIndex(taskList Tasks, taskName string) int {
 	for i := range taskList {
 		if taskList[i].TaskName == taskName {
@@ -148,6 +154,11 @@ func getIndex(taskList Tasks, taskName string) int {
 	}
 	return -1
 }
+
+// deleteTasks utilises the readJSONToTasks() function to read all of the current tasks into a Tasks struct.
+// Deletion is done through finding the index of the task specified, through getIndex(), and appending to the
+// slice before the given index, then after the given index + 1 and above. This removes the element from the slice.
+// This change is then written to the JSON file to reflect the deletion, passing the new slice with the relevant removal.
 func deleteTasks() {
 	allTasks := readJSONToTasks()
 	fmt.Print("Enter the task name to delete: ")
@@ -157,6 +168,8 @@ func deleteTasks() {
 	writeToJSONFile(allTasks, true)
 }
 
+// taskMenu calls the main option menu, this is continually looped
+// for the user to select any options they wish to use.
 func taskMenu() {
 	fmt.Println("Task Tracker - Go")
 	fmt.Println("1 - Add new task.\n2 - View current tasks.\n3 - Delete completed tasks.\nExit - Closes the application.")
@@ -175,6 +188,7 @@ func taskMenu() {
 	}
 }
 
+// exitProgram is used to call for the program to end with a status code of 3.
 func exitProgram() {
 	os.Exit(3)
 }
