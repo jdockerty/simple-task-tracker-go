@@ -21,7 +21,7 @@ type Tasks []Task
 
 const (
 	currentRuntime string = runtime.GOOS
-	jsonFileLocation string = `C:\Users\Jack\Desktop\Go\src\tasktrackergo\MyTasks.json`
+	jsonFileName string = `MyTasks.json`
 )
 
 func addNewTasks() {
@@ -62,18 +62,18 @@ func jsonFileExists(filename string) bool {
 
 func writeToJSONFile(taskList Tasks, appendToFile bool) {
 	if appendToFile {
-		jsonFile, err := os.OpenFile(jsonFileLocation, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+		jsonFile, err := os.OpenFile(jsonFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
 		if err != nil {
 			fmt.Println("Error opening:", err)
 			exitProgram()
 		}
 		defer jsonFile.Close()
 		taskJSON, _ := json.Marshal(taskList)
-		err = ioutil.WriteFile(jsonFileLocation, taskJSON, 0644)
+		err = ioutil.WriteFile(jsonFileName, taskJSON, 0644)
 		fmt.Println("Written to file...")
 	} else {
 		var newTask Tasks
-		jsonFile, err := os.OpenFile(jsonFileLocation, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+		jsonFile, err := os.OpenFile(jsonFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
 		if err != nil {
 			fmt.Println("Error opening:", err)
 			exitProgram()
@@ -89,7 +89,7 @@ func writeToJSONFile(taskList Tasks, appendToFile bool) {
 			newTask = append(newTask, task)
 		}
 		taskJSON, _ := json.Marshal(newTask)
-		err = ioutil.WriteFile(jsonFileLocation, taskJSON, 0644)
+		err = ioutil.WriteFile(jsonFileName, taskJSON, 0644)
 		fmt.Println("Written to file...")
 	}
 }
@@ -102,11 +102,11 @@ func jsonFormatToString(i interface{}) string {
 func viewAllTasks() {
 	var myTasks Tasks
 
-	jsonTasks, err := os.Open(jsonFileLocation)
+	jsonTasks, err := os.Open(jsonFileName)
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
-	fmt.Printf("JSON file: '%s' opened\n", jsonTasks.Name())
+	fmt.Printf("JSON file location: '%s'\n", jsonTasks.Name())
 	fmt.Println("All tasks...")
 	defer jsonTasks.Close()
 
@@ -130,7 +130,7 @@ func readUserInput() string {
 // Could maybe use this function with viewAllTasks too? fmt.print(jsonformattostring(readjson())) ??
 func readJSONToTasks() Tasks {
 	var currentTasks Tasks
-	jsonFile, err := os.Open(jsonFileLocation)
+	jsonFile, err := os.Open(jsonFileName)
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
@@ -159,10 +159,10 @@ func deleteTasks() {
 
 func taskMenu() {
 	fmt.Println("Task Tracker - Go")
-	fmt.Println("1 - Add new task.\n2 - View current tasks.\n3 - Delete completed tasks.")
+	fmt.Println("1 - Add new task.\n2 - View current tasks.\n3 - Delete completed tasks.\nExit - Closes the application.")
 	for {
 		fmt.Print("Select an option menu value: ")
-		switch readUserInput() {
+		switch strings.ToLower(readUserInput()) {
 		case "1":
 			addNewTasks()
 		case "2":
