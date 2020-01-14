@@ -19,6 +19,11 @@ type Task struct {
 
 type Tasks []Task
 
+const (
+	currentRuntime string = runtime.GOOS
+)
+
+
 func addNewTasks() {
 	fmt.Println("How many tasks would you like to add?")
 	fmt.Print("Enter a value: ")
@@ -85,7 +90,7 @@ func jsonFormatToString(i interface{}) string {
 func viewAllTasks() {
 	var myTasks Tasks
 
-	jsonTasks, err := os.Open("MyTasks.json")
+	jsonTasks, err := os.Open("myTasks.json")
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
@@ -102,7 +107,7 @@ func viewAllTasks() {
 func readUserInput() string {
 	reader := bufio.NewReader(os.Stdin)
 	userInput, _ := reader.ReadString('\n')
-	if runtime.GOOS == "windows" {
+	if currentRuntime == "windows" {
 		userInput = strings.TrimSuffix(userInput, "\r\n")
 	} else {
 		userInput = strings.TrimSuffix(userInput, "\n")
@@ -110,15 +115,49 @@ func readUserInput() string {
 	return userInput
 }
 
+// Could maybe use this function with viewAllTasks too? fmt.print(jsonformattostring(readjson())) ??
+func readJSONToTasks() Tasks {
+	var currentTasks Tasks
+	jsonFile, err := os.Open("myTasks.json")
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	defer jsonFile.Close()
+	bytes, _ := ioutil.ReadAll(jsonFile)
+	json.Unmarshal(bytes, &currentTasks)
+	return currentTasks
+} 
+
+func getIndex(taskList Tasks, taskName string) int {
+	for i := range taskList {
+		if taskList[i].TaskName == taskName {
+			return i
+		}
+	}
+	return -1
+}
+func deleteTasks() {
+	allTasks := readJSONToTasks()
+	taskToDelete := readUserInput()
+	fmt.Println("Deleting: ", jsonFormatToString(allTasks[getIndex(allTasks,taskToDelete)]))
+	allTasks = append(allTasks[:getIndex(allTasks,taskToDelete)], allTasks[getIndex(allTasks,taskToDelete) + 1:]...)
+	fmt.Println("Writing changes...")
+	//writeToJSONFile(allTasks)
+	// Appending on this function causes multiple entries.....
+}
+
 func taskMenu() {
-	fmt.Println("1 - Add new task.\n2 - View current tasks.")
+	fmt.Println("Task Tracker - Go")
+	fmt.Println("1 - Add new task.\n2 - View current tasks.\n3 - Delete completed tasks.")
 	for {
-		fmt.Print("Select an option value: ")
+		fmt.Print("Select an option menu value: ")
 		switch readUserInput() {
 		case "1":
 			addNewTasks()
 		case "2":
 			viewAllTasks()
+		case "3":
+			deleteTasks()
 		case "exit":
 			exitProgram()
 		}
@@ -130,6 +169,5 @@ func exitProgram() {
 }
 
 func main() {
-	fmt.Println("Task Tracker - Go")
 	taskMenu()
 }
