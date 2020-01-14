@@ -23,7 +23,6 @@ const (
 	currentRuntime string = runtime.GOOS
 )
 
-
 func addNewTasks() {
 	fmt.Println("How many tasks would you like to add?")
 	fmt.Print("Enter a value: ")
@@ -47,7 +46,7 @@ func addNewTasks() {
 		myNewTasks = append(myNewTasks, newTask)
 	}
 	fmt.Println("Tasks added:", jsonFormatToString(myNewTasks))
-	writeToJSONFile(myNewTasks)
+	writeToJSONFile(myNewTasks, false)
 
 }
 
@@ -59,26 +58,74 @@ func jsonFileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func writeToJSONFile(taskList Tasks) {
-	var newTask Tasks
-	jsonFile, err := os.OpenFile("MyTasks.json", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
-	if err != nil {
-		fmt.Println("Error opening:", err)
-		exitProgram()
+func handleWriteAppendJSON(taskList Tasks, appending bool) {
+	if appending {
+		jsonFile, err := os.OpenFile("MyTasks.json", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+		if err != nil {
+			fmt.Println("Error opening:", err)
+			exitProgram()
+		}
+		defer jsonFile.Close()
+		fmt.Println("Passed tasks:", taskList)
+		taskJSON, _ := json.Marshal(taskList)
+		err = ioutil.WriteFile("MyTasks.json", taskJSON, 0644)
+		fmt.Println("Written to file...")
+	} else {
+		var newTask Tasks
+		jsonFile, err := os.OpenFile("MyTasks.json", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+		if err != nil {
+			fmt.Println("Error opening:", err)
+			exitProgram()
+		}
+		defer jsonFile.Close()
+		bytes, err := ioutil.ReadAll(jsonFile)
+		if err != nil {
+			fmt.Println("Error reading:", err)
+			exitProgram()
+		}
+		err = json.Unmarshal(bytes, &newTask)
+		for _, task := range taskList {
+			newTask = append(newTask, task)
+		}
+		taskJSON, _ := json.Marshal(newTask)
+		err = ioutil.WriteFile("MyTasks.json", taskJSON, 0644)
+		fmt.Println("Written to file...")
 	}
-	defer jsonFile.Close()
-	bytes, err := ioutil.ReadAll(jsonFile)
-	if err != nil {
-		fmt.Println("Error reading:", err)
-		exitProgram()
+}
+
+func writeToJSONFile(taskList Tasks, appendToFile bool) {
+	if appendToFile {
+		jsonFile, err := os.OpenFile("MyTasks.json", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+		if err != nil {
+			fmt.Println("Error opening:", err)
+			exitProgram()
+		}
+		defer jsonFile.Close()
+		fmt.Println("Passed tasks:", taskList)
+		taskJSON, _ := json.Marshal(taskList)
+		err = ioutil.WriteFile("MyTasks.json", taskJSON, 0644)
+		fmt.Println("Written to file...")
+	} else {
+		var newTask Tasks
+		jsonFile, err := os.OpenFile("MyTasks.json", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+		if err != nil {
+			fmt.Println("Error opening:", err)
+			exitProgram()
+		}
+		defer jsonFile.Close()
+		bytes, err := ioutil.ReadAll(jsonFile)
+		if err != nil {
+			fmt.Println("Error reading:", err)
+			exitProgram()
+		}
+		err = json.Unmarshal(bytes, &newTask)
+		for _, task := range taskList {
+			newTask = append(newTask, task)
+		}
+		taskJSON, _ := json.Marshal(newTask)
+		err = ioutil.WriteFile("MyTasks.json", taskJSON, 0644)
+		fmt.Println("Written to file...")
 	}
-	err = json.Unmarshal(bytes, &newTask)
-	for _, task := range taskList {
-		newTask = append(newTask, task)
-	}
-	taskJSON, _ := json.Marshal(newTask)
-	err = ioutil.WriteFile("MyTasks.json", taskJSON, 0644)
-	fmt.Println("Written to file...")
 }
 
 func jsonFormatToString(i interface{}) string {
@@ -86,11 +133,10 @@ func jsonFormatToString(i interface{}) string {
 	return string(jsonData) + "\n"
 }
 
-
 func viewAllTasks() {
 	var myTasks Tasks
 
-	jsonTasks, err := os.Open("myTasks.json")
+	jsonTasks, err := os.Open("MyTasks.json")
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
@@ -118,7 +164,7 @@ func readUserInput() string {
 // Could maybe use this function with viewAllTasks too? fmt.print(jsonformattostring(readjson())) ??
 func readJSONToTasks() Tasks {
 	var currentTasks Tasks
-	jsonFile, err := os.Open("myTasks.json")
+	jsonFile, err := os.Open("MyTasks.json")
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
@@ -126,7 +172,7 @@ func readJSONToTasks() Tasks {
 	bytes, _ := ioutil.ReadAll(jsonFile)
 	json.Unmarshal(bytes, &currentTasks)
 	return currentTasks
-} 
+}
 
 func getIndex(taskList Tasks, taskName string) int {
 	for i := range taskList {
@@ -138,12 +184,11 @@ func getIndex(taskList Tasks, taskName string) int {
 }
 func deleteTasks() {
 	allTasks := readJSONToTasks()
+	fmt.Print("Enter the task name to delete: ")
 	taskToDelete := readUserInput()
-	fmt.Println("Deleting: ", jsonFormatToString(allTasks[getIndex(allTasks,taskToDelete)]))
-	allTasks = append(allTasks[:getIndex(allTasks,taskToDelete)], allTasks[getIndex(allTasks,taskToDelete) + 1:]...)
-	fmt.Println("Writing changes...")
-	//writeToJSONFile(allTasks)
-	// Appending on this function causes multiple entries.....
+	fmt.Println("Deleting: ", jsonFormatToString(allTasks[getIndex(allTasks, taskToDelete)]))
+	allTasks = append(allTasks[:getIndex(allTasks, taskToDelete)], allTasks[getIndex(allTasks, taskToDelete)+1:]...)
+	writeToJSONFile(allTasks, true)
 }
 
 func taskMenu() {
