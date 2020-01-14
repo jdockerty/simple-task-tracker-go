@@ -21,6 +21,7 @@ type Tasks []Task
 
 const (
 	currentRuntime string = runtime.GOOS
+	jsonFileLocation string = `C:\Users\Jack\Desktop\Go\src\tasktrackergo\MyTasks.json`
 )
 
 func addNewTasks() {
@@ -58,56 +59,21 @@ func jsonFileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func handleWriteAppendJSON(taskList Tasks, appending bool) {
-	if appending {
-		jsonFile, err := os.OpenFile("MyTasks.json", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
-		if err != nil {
-			fmt.Println("Error opening:", err)
-			exitProgram()
-		}
-		defer jsonFile.Close()
-		fmt.Println("Passed tasks:", taskList)
-		taskJSON, _ := json.Marshal(taskList)
-		err = ioutil.WriteFile("MyTasks.json", taskJSON, 0644)
-		fmt.Println("Written to file...")
-	} else {
-		var newTask Tasks
-		jsonFile, err := os.OpenFile("MyTasks.json", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
-		if err != nil {
-			fmt.Println("Error opening:", err)
-			exitProgram()
-		}
-		defer jsonFile.Close()
-		bytes, err := ioutil.ReadAll(jsonFile)
-		if err != nil {
-			fmt.Println("Error reading:", err)
-			exitProgram()
-		}
-		err = json.Unmarshal(bytes, &newTask)
-		for _, task := range taskList {
-			newTask = append(newTask, task)
-		}
-		taskJSON, _ := json.Marshal(newTask)
-		err = ioutil.WriteFile("MyTasks.json", taskJSON, 0644)
-		fmt.Println("Written to file...")
-	}
-}
 
 func writeToJSONFile(taskList Tasks, appendToFile bool) {
 	if appendToFile {
-		jsonFile, err := os.OpenFile("MyTasks.json", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+		jsonFile, err := os.OpenFile(jsonFileLocation, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
 		if err != nil {
 			fmt.Println("Error opening:", err)
 			exitProgram()
 		}
 		defer jsonFile.Close()
-		fmt.Println("Passed tasks:", taskList)
 		taskJSON, _ := json.Marshal(taskList)
-		err = ioutil.WriteFile("MyTasks.json", taskJSON, 0644)
+		err = ioutil.WriteFile(jsonFileLocation, taskJSON, 0644)
 		fmt.Println("Written to file...")
 	} else {
 		var newTask Tasks
-		jsonFile, err := os.OpenFile("MyTasks.json", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+		jsonFile, err := os.OpenFile(jsonFileLocation, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
 		if err != nil {
 			fmt.Println("Error opening:", err)
 			exitProgram()
@@ -123,7 +89,7 @@ func writeToJSONFile(taskList Tasks, appendToFile bool) {
 			newTask = append(newTask, task)
 		}
 		taskJSON, _ := json.Marshal(newTask)
-		err = ioutil.WriteFile("MyTasks.json", taskJSON, 0644)
+		err = ioutil.WriteFile(jsonFileLocation, taskJSON, 0644)
 		fmt.Println("Written to file...")
 	}
 }
@@ -136,7 +102,7 @@ func jsonFormatToString(i interface{}) string {
 func viewAllTasks() {
 	var myTasks Tasks
 
-	jsonTasks, err := os.Open("MyTasks.json")
+	jsonTasks, err := os.Open(jsonFileLocation)
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
@@ -164,7 +130,7 @@ func readUserInput() string {
 // Could maybe use this function with viewAllTasks too? fmt.print(jsonformattostring(readjson())) ??
 func readJSONToTasks() Tasks {
 	var currentTasks Tasks
-	jsonFile, err := os.Open("MyTasks.json")
+	jsonFile, err := os.Open(jsonFileLocation)
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
