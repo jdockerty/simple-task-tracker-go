@@ -163,8 +163,9 @@ func deleteTasks() {
 	allTasks := readJSONToTasks()
 	fmt.Print("Enter the task name to delete: ")
 	taskToDelete := readUserInput()
-	fmt.Println("Deleting: ", jsonFormatToString(allTasks[getIndex(allTasks, taskToDelete)]))
-	allTasks = append(allTasks[:getIndex(allTasks, taskToDelete)], allTasks[getIndex(allTasks, taskToDelete)+1:]...)
+	taskIndex := getIndex(allTasks, taskToDelete)
+	fmt.Println("Deleting: ", jsonFormatToString(allTasks[taskIndex]))
+	allTasks = append(allTasks[:taskIndex], allTasks[taskIndex+1:]...)
 	writeToJSONFile(allTasks, true)
 }
 
@@ -188,7 +189,7 @@ func taskMenu() {
 	}
 }
 
-// exitProgram is used to call for the program to end with a status code of 3.
+// exitProgram is used to call for the program to end.
 func exitProgram() {
 	os.Exit(3)
 }
