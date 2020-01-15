@@ -40,7 +40,7 @@ func addNewTasks() {
 	var myNewTasks Tasks
 	for i := 1; i <= taskCount; i++ {
 		fmt.Print("Enter a task name: ")
-		taskNameIn := readUserInput()
+		taskNameIn := strings.ToLower(readUserInput())
 
 		fmt.Print("Enter a summary of the task: ")
 		taskSummaryIn := readUserInput()
@@ -162,7 +162,7 @@ func getIndex(taskList Tasks, taskName string) int {
 func deleteTasks() {
 	allTasks := readJSONToTasks()
 	fmt.Print("Enter the task name to delete: ")
-	taskToDelete := readUserInput()
+	taskToDelete := strings.ToLower(readUserInput())
 	taskIndex := getIndex(allTasks, taskToDelete)
 	fmt.Println("Deleting: ", jsonFormatToString(allTasks[taskIndex]))
 	allTasks = append(allTasks[:taskIndex], allTasks[taskIndex+1:]...)
