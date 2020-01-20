@@ -14,7 +14,7 @@ import (
 // The Task struct defines a particular task, this is used for the JSON representation.
 type Task struct {
 	TaskName    string
-	TaskSummary string
+	TaskDetails string
 	CompletedBy string
 }
 
