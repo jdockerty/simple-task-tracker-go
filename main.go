@@ -4,6 +4,10 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/google/uuid"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -24,8 +28,110 @@ type Tasks []Task
 // Constants for the current OS runtime and name of the JSON file.
 const (
 	currentRuntime string = runtime.GOOS
-	jsonFileName string = `MyTasks.json`
+	jsonFileName   string = `MyTasks.json`
 )
+
+func awsSetup() *dynamodb.DynamoDB {
+	session, err := session.NewSession(&aws.Config{Region: aws.String("eu-west-2")})
+	if err != nil {
+		panic(err)
+	}
+
+	svc := dynamodb.New(session)
+	return svc
+}
+
+func readDynamoTable(dbSession *dynamodb.DynamoDB) {
+	input := &dynamodb.ScanInput{
+		TableName: aws.String("Task-Tracker"),
+	}
+
+	allData, err := dbSession.Scan(input)
+	if err != nil {
+		panic(err)
+	}
+
+	if len(allData.Items) == 0 {
+		fmt.Println("Table is empty.")
+	} else {
+		for _, value := range allData.Items {
+			fmt.Printf("\nTaskID: %s\nTask Name: %s\nTask Details: %s\nCompletion Date: %s\n\n",
+				*value["TaskID"].S, *value["Task Name"].S, *value["Task Details"].S, *value["Completion Date"].S)
+		}
+	}
+
+}
+
+func addItemDynamoTable(dbSession *dynamodb.DynamoDB) {
+	newTaskID := uuid.New()
+
+	fmt.Print("Enter a task name: ")
+	taskName := readUserInput()
+
+	fmt.Print("Enter the task details: ")
+	taskDetails := readUserInput()
+
+	fmt.Print("Enter the completion date: ")
+	completeBy := readUserInput()
+
+	itemInput := &dynamodb.PutItemInput{
+		TableName: aws.String("Task-Tracker"),
+		Item: map[string]*dynamodb.AttributeValue{
+			"TaskID": {
+				S: aws.String(newTaskID.String()),
+			},
+			"Task Name": {
+				S: aws.String(taskName),
+			},
+			"Task Details": {
+				S: aws.String(taskDetails),
+			},
+			"Completion Date": {
+				S: aws.String(completeBy),
+			},
+		},
+	}
+
+	_, err := dbSession.PutItem(itemInput)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("\nTask sent: \n\tTaskID = %s\n\tTask Name = %s\n\tTask Details = %s\n\tCompletion Date = %s\n\n", 
+	newTaskID.String(), taskName, taskDetails, completeBy)
+}
+
+func deleteItemDynamoTable(dbSession *dynamodb.DynamoDB) {
+	fmt.Print("Enter the task name to delete: ")
+	itemChoice := readUserInput()
+
+	itemDelete := &dynamodb.DeleteItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"TaskID": {
+				S: aws.String(itemChoice),
+			},
+		},
+		TableName: aws.String("Task-Tracker"),
+	}
+
+	_, err := dbSession.DeleteItem(itemDelete)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Task deleted.")
+}
+
+func awsCalls(choice string) {
+	mySession := awsSetup()
+
+	switch choice {
+	case "view":
+		readDynamoTable(mySession)
+	case "delete":
+		deleteItemDynamoTable(mySession)
+	case "add":
+		addItemDynamoTable(mySession)
+	}
+}
 
 // addNewTasks is used to create a number of tasks, that the user specifies, and then write these
 // to the JSON file. The user is prompted for the appropriate input.
@@ -57,7 +163,7 @@ func addNewTasks() {
 }
 
 // writeToJSONFile will write to the JSON file containing the tasks, or append to it if the appendToFile
-// variable is set to true. 
+// variable is set to true.
 func writeToJSONFile(taskList Tasks, appendToFile bool) {
 	if appendToFile {
 		jsonFile, err := os.OpenFile(jsonFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
@@ -173,16 +279,21 @@ func deleteTasks() {
 // for the user to select any options they wish to use.
 func taskMenu() {
 	fmt.Println("Task Tracker - Go")
-	fmt.Println("1 - Add new task.\n2 - View current tasks.\n3 - Delete completed tasks.\nExit - Closes the application.")
+	fmt.Println("1 - Add new task.\n2 - View current tasks.\n3 - Delete completed tasks.\n4 - Test AWS stuff.\nExit - Closes the application.")
 	for {
 		fmt.Print("Select an option menu value: ")
 		switch strings.ToLower(readUserInput()) {
 		case "1":
-			addNewTasks()
+			awsCalls("add")
+			//addNewTasks()
 		case "2":
-			viewAllTasks()
+			//viewAllTasks()
+			awsCalls("view")
 		case "3":
-			deleteTasks()
+			//deleteTasks()
+			awsCalls("delete")
+		// case "4":
+		// 	testAWS()
 		case "exit":
 			exitProgram()
 		}
@@ -191,7 +302,7 @@ func taskMenu() {
 
 // exitProgram is used to call for the program to end.
 func exitProgram() {
-	os.Exit(3)
+	os.Exit(2)
 }
 
 func main() {
