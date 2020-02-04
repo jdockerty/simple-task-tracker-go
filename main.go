@@ -9,6 +9,11 @@ import (
 	"github.com/google/uuid"
 	"os"
 	"strings"
+	"runtime"
+)
+
+const (
+	currentRuntime string = runtime.GOOS
 )
 
 // awsSetup is a helper function for creating an AWS Session and returns the DynamoDB client for use around the program.
@@ -42,6 +47,44 @@ func readDynamoTable(dbSession *dynamodb.DynamoDB) {
 		}
 	}
 
+}
+
+func modifyItemDynamoTable(dbSession *dynamodb.DynamoDB) {
+	fmt.Print("Enter the ID of the task you wish to modify: ")
+	modifyTaskID := readUserInput()
+
+	fmt.Print("Enter a task name: ")
+	taskName := readUserInput()
+
+	fmt.Print("Enter the task details: ")
+	taskDetails := readUserInput()
+
+	fmt.Print("Enter the completion date: ")
+	completeBy := readUserInput()
+
+	itemInput := &dynamodb.PutItemInput{
+		TableName: aws.String("Task-Tracker"),
+		Item: map[string]*dynamodb.AttributeValue{
+			"TaskID": {
+				S: aws.String(modifyTaskID),
+			},
+			"Task Name": {
+				S: aws.String(taskName),
+			},
+			"Task Details": {
+				S: aws.String(taskDetails),
+			},
+			"Completion Date": {
+				S: aws.String(completeBy),
+			},
+		},
+	}
+
+	_, err := dbSession.PutItem(itemInput)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("\nTask modified: \n\tTask Name = %s\n\tTask Details = %s\n\tCompletion Date = %s\n\n", taskName, taskDetails, completeBy)
 }
 
 // addItemDynamoTable will add the item to DynamoDB and generate a TaskID with a new UUID. This is displayed to the user for clarity.
@@ -86,7 +129,7 @@ func addItemDynamoTable(dbSession *dynamodb.DynamoDB) {
 // Deletes the task with the relevant TaskID from the DynamoDB table, this function is best used alongside the readDynamoTable function as it provides
 // the relevant TaskID to delete.
 func deleteItemDynamoTable(dbSession *dynamodb.DynamoDB) {
-	fmt.Print("Enter the task name to delete: ")
+	fmt.Print("Enter the TaskID to delete: ")
 	itemChoice := readUserInput()
 
 	itemDelete := &dynamodb.DeleteItemInput{
@@ -116,6 +159,8 @@ func awsCalls(choice string) {
 		deleteItemDynamoTable(mySession)
 	case "add":
 		addItemDynamoTable(mySession)
+	case "modify":
+		modifyItemDynamoTable(mySession)
 	}
 }
 
@@ -135,8 +180,7 @@ func readUserInput() string {
 // taskMenu calls the main option menu, this is continually looped
 // for the user to select any options they wish to use.
 func taskMenu() {
-	fmt.Println("Task Tracker - Go")
-	fmt.Println("1 - Add new task.\n2 - View current tasks.\n3 - Delete completed tasks.\nExit - Closes the application.")
+	fmt.Println("1 - Add new task.\n2 - View current tasks.\n3 - Delete completed tasks.\n4 - Modify a task.\n5 - Closes the application.\n")
 	for {
 		fmt.Print("Select an option menu value: ")
 		switch strings.ToLower(readUserInput()) {
@@ -146,8 +190,12 @@ func taskMenu() {
 			awsCalls("view")
 		case "3":
 			awsCalls("delete")
-		case "exit":
+		case "4":
+			awsCalls("modify")
+		case "5":
 			exitProgram()
+		default:
+			taskMenu()
 		}
 	}
 }
@@ -158,5 +206,7 @@ func exitProgram() {
 }
 
 func main() {
+	fmt.Println("Task Tracker - Go")
+	fmt.Println("Any input not in the menu will refresh the options.")
 	taskMenu()
 }
