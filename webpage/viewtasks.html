@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+    <style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th {
+  background-color: #4CAF50;
+  color: white;
+}
+h1 { color: #111; font-family: 'Helvetica Neue', sans-serif; font-size: 5vw; font-weight: bold; letter-spacing: -1px; line-height: 1; text-align: center; }
+  
+      td, th {
+        border: 1px solid #dddddd;
+        text-align: center;
+        padding: 8px;
+      }
+      
+      tr:nth-child(even) {
+        background-color: #dddddd;
+      }
+      </style>
+    <head>
+        <title></title>
+        </head>
+        <body>
+            <a href="/"> Back to menu</a>
+            <h1>View Tasks</h1>
+            <table>
+                <tr>
+                  <th>TaskID</th>
+                  <th>Task Name</th>
+                  <th>Task Details</th>
+                  <th>Complete By</th>
+                </tr>
+                {{range .}}
+                <tr>
+                  <td>{{.TaskID}}</td>
+                  <td>{{.TaskName}}</td>
+                  <td>{{.TaskDetails}}</td>
+                  <td>{{.CompletionDate}}</td>
+                </tr>
+                {{end}}
+              </table>
+        </body>
+</html>

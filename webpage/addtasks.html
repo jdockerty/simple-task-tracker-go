@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+    <style>
+    h1 { color: #111; font-family: 'Helvetica Neue', sans-serif; font-size: 5vw; font-weight: bold; letter-spacing: -1px; line-height: 1; text-align: center; }
+    form {
+    width: 80%;
+    margin: auto;
+    font-family: 'Helvetica Neue', sans-serif;
+    }
+
+label, input {
+    display: inline-block;
+}
+
+label {
+    width: 30%;
+    text-align: right;
+}
+
+label + input {
+    width: 30%;
+}
+
+input + input {
+    float: right;
+}
+
+input[type=submit] {
+    margin-left: 35%;
+    margin-top: 1%;
+}
+
+    </style>
+    <head>
+        <title></title>
+        </head>
+        <body>
+            <a href="/"> Back to menu</a>
+            <h1>Enter a task to add</h1>
+            <div class="addTask">
+            <form action="/Add" method="post">
+                <label>Task Name: <input type="text" name="TaskName"></label>
+            <label>Task Details: <input type="text" name="TaskDetails"></label>
+        <label>Complete By: <input type="text" name="CompleteBy"></label>
+                <input type="submit" value="Add Task" id="submitButton">
+            </form>
+        </div>
+        </body>
+</html>
