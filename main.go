@@ -178,12 +178,15 @@ func readUserInput() string {
 }
 
 // taskMenu calls the main option menu, this is continually looped
-// for the user to select any options they wish to use.
+// for the user to select any options they wish to use. Any input which is not in the switch case will cause the menu to refresh 
+// the options and is not accepted.
 func taskMenu() {
 	fmt.Println("1 - Add new task.\n2 - View current tasks.\n3 - Delete completed tasks.\n4 - Modify a task.\n5 - Closes the application.\n")
 	for {
+
 		fmt.Print("Select an option menu value: ")
-		switch strings.ToLower(readUserInput()) {
+		userChoice := readUserInput()
+		switch userChoice {
 		case "1":
 			awsCalls("add")
 		case "2":
@@ -195,6 +198,7 @@ func taskMenu() {
 		case "5":
 			exitProgram()
 		default:
+			fmt.Println("\n-- Error: Enter a numeric value on the menu --\n")
 			taskMenu()
 		}
 	}
