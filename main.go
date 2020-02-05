@@ -10,21 +10,22 @@ import (
 	"os"
 	"strings"
 	"runtime"
+	"tasktrackergo/webpage"
 )
 
 const (
 	currentRuntime string = runtime.GOOS
 )
 
-// awsSetup is a helper function for creating an AWS Session and returns the DynamoDB client for use around the program.
-func awsSetup() *dynamodb.DynamoDB {
+// awsConnection is a helper function for creating an AWS Session and returns the DynamoDB client for use around the program.
+func awsConnection() *dynamodb.DynamoDB {
 	session, err := session.NewSession(&aws.Config{Region: aws.String("eu-west-2")})
 	if err != nil {
 		panic(err)
 	}
 
-	svc := dynamodb.New(session)
-	return svc
+	dbInstance := dynamodb.New(session)
+	return dbInstance
 }
 
 // readDynamoTable will print out the contents of the entire DynamoDB table to the console window.
@@ -150,7 +151,7 @@ func deleteItemDynamoTable(dbSession *dynamodb.DynamoDB) {
 
 // awsCalls is a helper function for using the interactive command-line to pick a option from the menu and then call the appropriate function.
 func awsCalls(choice string) {
-	mySession := awsSetup()
+	mySession := awsConnection()
 
 	switch choice {
 	case "view":
@@ -212,5 +213,6 @@ func exitProgram() {
 func main() {
 	fmt.Println("Task Tracker - Go")
 	fmt.Println("Any input not in the menu will refresh the options.")
-	taskMenu()
+	//taskMenu()
+	webpage.PopulateTemplate()
 }
