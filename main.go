@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"runtime"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -30,8 +29,15 @@ type Tasks []Task
 
 // Function for serving the add task page. Data is sent from the form to AWS through a POST request.
 func addTasks(w http.ResponseWriter, r *http.Request) {
+
+	if currentRuntime == "windows" {
 	template := template.Must(template.ParseFiles(`webpage\addtasks.html`))
 	template.Execute(w, nil)
+	} else {
+		template := template.Must(template.ParseFiles(`webpage/addtasks.html`))
+		template.Execute(w, nil)
+	}
+
 	r.ParseForm()
 	if r.Method == "POST" {
 		newTaskID := uuid.New()
@@ -83,7 +89,8 @@ func awsConnection() *dynamodb.DynamoDB {
 
 // Function for serving the view tasks page. All of the data is scanned from DynamoDB and a table is dynamically generated through a template.
 func viewTasks(w http.ResponseWriter, r *http.Request) {
-	template := template.Must(template.ParseFiles(`webpage\viewtasks.html`))
+
+
 
 	input := &dynamodb.ScanInput{
 		TableName: aws.String("Task-Tracker"),
@@ -103,14 +110,19 @@ func viewTasks(w http.ResponseWriter, r *http.Request) {
 			task := Task{*value["TaskID"].S, *value["Task Name"].S, *value["Task Details"].S, *value["Completion Date"].S}
 			myTasks = append(myTasks, task)
 		}
-		template.Execute(w, myTasks)
 
+		if currentRuntime == "windows" {
+			template := template.Must(template.ParseFiles(`webpage\viewtasks.html`))
+			template.Execute(w, myTasks)
+			} else {
+				template := template.Must(template.ParseFiles(`webpage/viewtasks.html`))
+				template.Execute(w, myTasks)
+			}
 	}
 }
 
 // Function for serving the modify task page. All data is scanned and taskIDs populate the selection box for the user to select the task they wish to modify.
 func modifyTask(w http.ResponseWriter, r *http.Request) {
-	template := template.Must(template.ParseFiles(`webpage\modifytask.html`))
 
 	input := &dynamodb.ScanInput{
 		TableName: aws.String("Task-Tracker"),
@@ -130,7 +142,16 @@ func modifyTask(w http.ResponseWriter, r *http.Request) {
 			task := Task{*value["TaskID"].S, *value["Task Name"].S, *value["Task Details"].S, *value["Completion Date"].S}
 			myTasks = append(myTasks, task)
 		}
-		template.Execute(w, myTasks)
+
+		if currentRuntime == "windows" {
+			template := template.Must(template.ParseFiles(`webpage\modifytask.html`))
+			template.Execute(w, myTasks)
+			} else {
+				template := template.Must(template.ParseFiles(`webpage/modifytask.html`))
+				template.Execute(w, myTasks)
+			}
+
+
 		if r.Method == "POST" {
 			itemInput := &dynamodb.PutItemInput{
 				TableName: aws.String("Task-Tracker"),
@@ -164,7 +185,7 @@ func modifyTask(w http.ResponseWriter, r *http.Request) {
 // select the TaskID which they want to delete.
 func deleteTask(w http.ResponseWriter, r *http.Request) {
 	taskIDs := make(map[string]string)
-	template := template.Must(template.ParseFiles(`webpage\deletetasks.html`))
+
 	dbSession := awsConnection()
 
 	input := &dynamodb.ScanInput{
@@ -178,7 +199,15 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 	for _, value := range allData.Items {
 		taskIDs[*value["TaskID"].S] = *value["Task Name"].S
 	}
-	template.Execute(w, taskIDs)
+
+	if currentRuntime == "windows" {
+		template := template.Must(template.ParseFiles(`webpage\deletetasks.html`))
+		template.Execute(w, taskIDs)
+		} else {
+			template := template.Must(template.ParseFiles(`webpage/deletetasks.html`))
+			template.Execute(w, taskIDs)
+		}
+
 	if r.Method == "POST" {
 		itemDelete := &dynamodb.DeleteItemInput{
 			Key: map[string]*dynamodb.AttributeValue{
@@ -199,8 +228,14 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 
 // Route for serving the main menu.
 func menu(w http.ResponseWriter, r *http.Request) {
-	template := template.Must(template.ParseFiles(`webpage\menu.html`))
+	if currentRuntime == "windows" {
+		template := template.Must(template.ParseFiles(`webpage\menu.html`))
+		template.Execute(w, nil)
+	} else {
+	template := template.Must(template.ParseFiles(`webpage/menu.html`))
 	template.Execute(w, nil)
+	}
+
 }
 
 // Opens localhost on port 8080. Used for testing purposes and reduces the need to continually open browser myself :D
