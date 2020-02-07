@@ -238,11 +238,6 @@ func menu(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// Opens localhost on port 8080. Used for testing purposes and reduces the need to continually open browser myself :D
-func openMenu() {
-	var url string = "http://localhost:8080"
-	browser.OpenURL(url)
-}
 
 func main() {
 	log.Println("Server running...")
@@ -251,6 +246,6 @@ func main() {
 	http.HandleFunc("/Add", addTasks)
 	http.HandleFunc("/Delete", deleteTask)
 	http.HandleFunc("/Modify", modifyTask)
-	http.ListenAndServe(":8080", nil)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
