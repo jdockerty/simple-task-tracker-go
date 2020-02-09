@@ -14,3 +14,6 @@ A simple menu provides basic navigation to various pages.
 Tasks are viewed in a table which is dynmically generated upon visiting the page, the data is pulled from the AWS DynamoDB table after clicking the `View Tasks` menu option, this calls the relevant Go function.
 
 ![viewtasks](https://github.com/jdockerty/simpletasktrackergo/blob/master/images/viewtasks.png)
+
+
+Terraform was used to deploy the web application onto a custom AMI, although this was not particularly necessary once utilising `user data` in AWS, as Golang and Git could be installed on the machine at boot-time. The Terraform file creates a VPC for deploying the instances, with an Elastic Load Balancer that listens on port 8080, this forwards the incoming traffic to the private subnets, where the instances are serving the web application, so that the load balancer is the internet facing portion of the architecture; the instances are not directly accessible via HTTP, they only allow traffic from the private subnet `10.0.0.0/16`, which is the CIDR block allocated to the VPC.
