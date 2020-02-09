@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/google/uuid"
-	"github.com/pkg/browser"
 )
 
 const (
@@ -246,6 +245,6 @@ func main() {
 	http.HandleFunc("/Add", addTasks)
 	http.HandleFunc("/Delete", deleteTask)
 	http.HandleFunc("/Modify", modifyTask)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	http.ListenAndServe(":8080", nil)
 
 }
