@@ -82,21 +82,18 @@ func addTasks(w http.ResponseWriter, r *http.Request) {
 func getParams(sess *session.Session) *credentials.Credentials {
 	var creds []string
 	ssmsvc := ssm.New(sess, aws.NewConfig().WithRegion("eu-west-2"))
-	params, err := ssmsvc.GetParameters(&ssm.GetParametersInput{
-		Names: []*string{aws.String("access_key"), aws.String("s_access")},
-	})
+	params, err := ssmsvc.GetParameters(&ssm.GetParametersInput{ Names: []*string{aws.String("access_key"), aws.String("s_access")},})
 	if err != nil {
 		panic(err)
 	}
+
 	creds = append(creds, *params.Parameters[0].Value, *params.Parameters[1].Value)
-
 	c := credentials.NewStaticCredentials(creds[0], creds[1], "")
-	credVal, err := c.Get()
 	if err != nil {
 		panic(err)
 
 	}
-	log.Println(credVal, c)
+
 	return c
 }
 
