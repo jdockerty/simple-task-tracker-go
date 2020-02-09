@@ -13,7 +13,7 @@ resource "aws_internet_gateway" "tasktrackIGW" {
   vpc_id = "${aws_vpc.tasktrackVPC.id}"
 }
 
-# Grant the VPC internet access on its main route table
+# Default route to internet, allows the VPC CIDR block to be accessible via the internet
 resource "aws_route" "internet_access" {
   route_table_id         = "${aws_vpc.tasktrackVPC.main_route_table_id}"
   destination_cidr_block = "0.0.0.0/0"
@@ -54,7 +54,6 @@ resource "aws_security_group" "elb" {
 # the instances over SSH and HTTP
 resource "aws_security_group" "tasktrackSG" {
   name        = "task_tracker"
-  description = "Used in terraform"
   vpc_id      = "${aws_vpc.tasktrackVPC.id}"
 
   # SSH access from anywhere
@@ -99,13 +98,11 @@ resource "aws_elb" "tasktrackerELB" {
 
 
 resource "aws_instance" "tasktracker" {
-  # The connection block tells our provisioner how to
-  # communicate with the resource (instance)
   connection {
     # The default username for our AMI
-    user = "ec2-user"
+    user = "ubuntu"
     host = "${self.public_ip}"
-    # The connection will use the local SSH agent for authentication.
+    private_key = "${file("C:\\Users\\Jack\\.ssh\\BusinessInfra.pem")}"
   }
 
   instance_type = "t2.micro"
@@ -116,46 +113,45 @@ resource "aws_instance" "tasktracker" {
 
   key_name = "BusinessInfra"
 
-  # Our Security group to allow HTTP and SSH access
+  # Our Security group to allow HTTP (private) and SSH (anywhere) access
   vpc_security_group_ids = ["${aws_security_group.tasktrackSG.id}"]
 
-  # We're going to launch into the same subnet as our ELB. In a production
-  # environment it's more common to have a separate private subnet for
-  # backend instances.
+  # Launch EC2 into separate private subnet, this is only accessed by the ELB on port 8080.
+
   subnet_id = "${aws_subnet.tasktrackSubnet.id}"
-}
 
-
-resource "aws_instance" "tasktrackerTwo" {
-  # The connection block tells our provisioner how to
-  # communicate with the resource (instance)
-  connection {
-    # The default username for our AMI
-    user = "ec2-user"
-    host = "${self.public_ip}"
-
-    # The connection will use the local SSH agent for authentication.
+  # User data provides a short bash script to configure the instance, downloading the dependencies and building the 
+  # Go code into a Linux binary which is executed afterwards.
+  user_data = <<EOT
+  #!/bin/bash
+  cd /home/ec2-user/simpletasktrackergo/
+  go mod download
+  sudo go build -v main.go
+  sudo ./main &
+  EOT
   }
 
+  resource "aws_instance" "tasktrackerTwo" {
+  connection {
+    user = "ubuntu"
+    host = "${self.public_ip}"
+    private_key = "${file("C:\\Users\\Jack\\.ssh\\BusinessInfra.pem")}"
+  }
   instance_type = "t2.micro"
-
-  # Lookup the correct AMI based on the region
-  # we specified
   ami = "${lookup(var.aws_amis, var.aws_region)}"
-
   key_name = "BusinessInfra"
-
-  # Our Security group to allow HTTP and SSH access
   vpc_security_group_ids = ["${aws_security_group.tasktrackSG.id}"]
-
-  # We're going to launch into the same subnet as our ELB. In a production
-  # environment it's more common to have a separate private subnet for
-  # backend instances.
   subnet_id = "${aws_subnet.tasktrackSubnet.id}"
+  user_data = <<EOT
+  #!/bin/bash
+  cd /home/ec2-user/simpletasktrackergo/
+  go mod download
+  sudo go build -v main.go
+  sudo ./main &
+  EOT
+  }
 
-            
-}
-
-output "ELB_IP" {
+# Output the DNS for the ELB once Terraform has completed.
+output "ELB" {
   value = "${aws_elb.tasktrackerELB.dns_name}"
 }

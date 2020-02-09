@@ -4,6 +4,6 @@ variable "aws_region" {
 
 variable "aws_amis" {
   default = {
-      eu-west-2 = "ami-003ff27f7edfb65e9" # My AMI with Go + dependencies + AWS CLI configured
+      eu-west-2 = "ami-09120dc9a0ea0cdea" # My AMI with Go + AWS CLI configured
   }
 }

@@ -77,6 +77,8 @@ func addTasks(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// getParams will pull the AWS credentials from SSM Parameter store, these can then be passed to
+// read any data from the DynamoDB table.
 func getParams(sess *session.Session) *credentials.Credentials {
 	var creds []string
 	ssmsvc := ssm.New(sess, aws.NewConfig().WithRegion("eu-west-2"))
