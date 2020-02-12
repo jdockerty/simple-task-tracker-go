@@ -1,16 +1,20 @@
 package main
 
 import (
-	"html/template"
-	"log"
-	"net/http"
-	"runtime"
+	"encoding/json"
+	//"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/ssm"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"html/template"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"runtime"
 )
 
 const (
@@ -28,12 +32,58 @@ type Task struct {
 // Tasks are a slice of Task, used for populating data to place into templates.
 type Tasks []Task
 
+
+// Function for adding a task to the task database, the user does not need to generate a taskID as this is done using
+// a new UUID so that it is compliant and saves the user time. An example is shown below.
+// {
+//	"TaskName": "My New Task",
+//	"TaskDetails": "New Task Details",
+//	"CompletionDate": "31/12/2020"
+//	}
+func addTaskAPI(w http.ResponseWriter, r *http.Request) {
+	var newTask Task
+	requestBody, _ := ioutil.ReadAll(r.Body)
+	json.Unmarshal(requestBody, &newTask)
+	newTask.TaskID = uuid.New().String()
+	addTaskAPIHelper(newTask)
+	json.NewEncoder(w).Encode("Task added, ID is " + newTask.TaskID)
+}
+
+// Helper function for adding a new task from the add task API portion.
+func addTaskAPIHelper(newTask Task) {
+	dbSession := awsConnection()
+
+		itemInput := &dynamodb.PutItemInput{
+			TableName: aws.String("Task-Tracker"),
+			Item: map[string]*dynamodb.AttributeValue{
+				"TaskID": {
+					S: aws.String(newTask.TaskID),
+				},
+				"Task Name": {
+					S: aws.String(newTask.TaskName),
+				},
+				"Task Details": {
+					S: aws.String(newTask.TaskDetails),
+				},
+				"Completion Date": {
+					S: aws.String(newTask.CompletionDate),
+				},
+			},
+		}
+
+		_, err := dbSession.PutItem(itemInput)
+		if err != nil {
+			panic(err)
+		}
+
+}
+
 // Function for serving the add task page. Data is sent from the form to AWS through a POST request.
 func addTasks(w http.ResponseWriter, r *http.Request) {
 
 	if currentRuntime == "windows" {
-	template := template.Must(template.ParseFiles(`webpage\addtasks.html`))
-	template.Execute(w, nil)
+		template := template.Must(template.ParseFiles(`webpage\addtasks.html`))
+		template.Execute(w, nil)
 	} else {
 		template := template.Must(template.ParseFiles(`webpage/addtasks.html`))
 		template.Execute(w, nil)
@@ -82,7 +132,7 @@ func addTasks(w http.ResponseWriter, r *http.Request) {
 func getParams(sess *session.Session) *credentials.Credentials {
 	var creds []string
 	ssmsvc := ssm.New(sess, aws.NewConfig().WithRegion("eu-west-2"))
-	params, err := ssmsvc.GetParameters(&ssm.GetParametersInput{ Names: []*string{aws.String("access_key"), aws.String("s_access")},})
+	params, err := ssmsvc.GetParameters(&ssm.GetParametersInput{Names: []*string{aws.String("access_key"), aws.String("s_access")}})
 	if err != nil {
 		panic(err)
 	}
@@ -104,16 +154,25 @@ func awsConnection() *dynamodb.DynamoDB {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	dbInstance := dynamodb.New(session, &aws.Config{Credentials: credentials})
 	return dbInstance
 }
 
-// Function for serving the view tasks page. All of the data is scanned from DynamoDB and a table is dynamically generated through a template.
-func viewTasks(w http.ResponseWriter, r *http.Request) {
+// Function for serving the JSON response to a HTTP GET request with a task information, this is serves an array of JSON which can
+// be unmarshalled back into the Tasks slice shown here.
+func viewAllTasksAPI(w http.ResponseWriter, r *http.Request) {
+	allTasks := populateTasks()
 
+	if len(allTasks) == 0 {
+		json.NewEncoder(w).Encode("No tasks available.")
+	} else {
+		json.NewEncoder(w).Encode(allTasks)
+	}
+}
 
-
+// Helper function for populating and returning a list of task structs.
+func populateTasks() Tasks {
 	input := &dynamodb.ScanInput{
 		TableName: aws.String("Task-Tracker"),
 	}
@@ -133,13 +192,22 @@ func viewTasks(w http.ResponseWriter, r *http.Request) {
 			myTasks = append(myTasks, task)
 		}
 
-		if currentRuntime == "windows" {
-			template := template.Must(template.ParseFiles(`webpage\viewtasks.html`))
-			template.Execute(w, myTasks)
-			} else {
-				template := template.Must(template.ParseFiles(`webpage/viewtasks.html`))
-				template.Execute(w, myTasks)
-			}
+		return myTasks
+
+	}
+	return nil
+}
+
+// Function for serving the view tasks page. All of the data is scanned from DynamoDB and a table is dynamically generated through a template.
+func viewTasks(w http.ResponseWriter, r *http.Request) {
+	allTasks := populateTasks()
+
+	if currentRuntime == "windows" {
+		template := template.Must(template.ParseFiles(`webpage\viewtasks.html`))
+		template.Execute(w, allTasks)
+	} else {
+		template := template.Must(template.ParseFiles(`webpage/viewtasks.html`))
+		template.Execute(w, allTasks)
 	}
 }
 
@@ -168,11 +236,10 @@ func modifyTask(w http.ResponseWriter, r *http.Request) {
 		if currentRuntime == "windows" {
 			template := template.Must(template.ParseFiles(`webpage\modifytask.html`))
 			template.Execute(w, myTasks)
-			} else {
-				template := template.Must(template.ParseFiles(`webpage/modifytask.html`))
-				template.Execute(w, myTasks)
-			}
-
+		} else {
+			template := template.Must(template.ParseFiles(`webpage/modifytask.html`))
+			template.Execute(w, myTasks)
+		}
 
 		if r.Method == "POST" {
 			itemInput := &dynamodb.PutItemInput{
@@ -225,10 +292,10 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 	if currentRuntime == "windows" {
 		template := template.Must(template.ParseFiles(`webpage\deletetasks.html`))
 		template.Execute(w, taskIDs)
-		} else {
-			template := template.Must(template.ParseFiles(`webpage/deletetasks.html`))
-			template.Execute(w, taskIDs)
-		}
+	} else {
+		template := template.Must(template.ParseFiles(`webpage/deletetasks.html`))
+		template.Execute(w, taskIDs)
+	}
 
 	if r.Method == "POST" {
 		itemDelete := &dynamodb.DeleteItemInput{
@@ -254,20 +321,22 @@ func menu(w http.ResponseWriter, r *http.Request) {
 		template := template.Must(template.ParseFiles(`webpage\menu.html`))
 		template.Execute(w, nil)
 	} else {
-	template := template.Must(template.ParseFiles(`webpage/menu.html`))
-	template.Execute(w, nil)
+		template := template.Must(template.ParseFiles(`webpage/menu.html`))
+		template.Execute(w, nil)
 	}
 
 }
 
-
 func main() {
 	log.Println("Server running...")
-	http.HandleFunc("/", menu)
-	http.HandleFunc("/View", viewTasks)
-	http.HandleFunc("/Add", addTasks)
-	http.HandleFunc("/Delete", deleteTask)
-	http.HandleFunc("/Modify", modifyTask)
-	http.ListenAndServe(":8080", nil)
-
+	
+	myHTTPRouter := mux.NewRouter().StrictSlash(true)
+	myHTTPRouter.HandleFunc("/", menu)
+	myHTTPRouter.HandleFunc("/View", viewTasks)
+	myHTTPRouter.HandleFunc("/api/ViewAll", viewAllTasksAPI)
+	myHTTPRouter.HandleFunc("/Add", addTasks)
+	myHTTPRouter.HandleFunc("/api/Add", addTaskAPI).Methods("POST")
+	myHTTPRouter.HandleFunc("/Delete", deleteTask)
+	myHTTPRouter.HandleFunc("/Modify", modifyTask)
+	http.ListenAndServe(":8080", myHTTPRouter)
 }
