@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	//"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -32,7 +31,6 @@ type Task struct {
 // Tasks are a slice of Task, used for populating data to place into templates.
 type Tasks []Task
 
-
 // Function for adding a task to the task database, the user does not need to generate a taskID as this is done using
 // a new UUID so that it is compliant and saves the user time. An example is shown below.
 // {
@@ -53,28 +51,28 @@ func addTaskAPI(w http.ResponseWriter, r *http.Request) {
 func addTaskAPIHelper(newTask Task) {
 	dbSession := awsConnection()
 
-		itemInput := &dynamodb.PutItemInput{
-			TableName: aws.String("Task-Tracker"),
-			Item: map[string]*dynamodb.AttributeValue{
-				"TaskID": {
-					S: aws.String(newTask.TaskID),
-				},
-				"Task Name": {
-					S: aws.String(newTask.TaskName),
-				},
-				"Task Details": {
-					S: aws.String(newTask.TaskDetails),
-				},
-				"Completion Date": {
-					S: aws.String(newTask.CompletionDate),
-				},
+	itemInput := &dynamodb.PutItemInput{
+		TableName: aws.String("Task-Tracker"),
+		Item: map[string]*dynamodb.AttributeValue{
+			"TaskID": {
+				S: aws.String(newTask.TaskID),
 			},
-		}
+			"Task Name": {
+				S: aws.String(newTask.TaskName),
+			},
+			"Task Details": {
+				S: aws.String(newTask.TaskDetails),
+			},
+			"Completion Date": {
+				S: aws.String(newTask.CompletionDate),
+			},
+		},
+	}
 
-		_, err := dbSession.PutItem(itemInput)
-		if err != nil {
-			panic(err)
-		}
+	_, err := dbSession.PutItem(itemInput)
+	if err != nil {
+		panic(err)
+	}
 
 }
 
@@ -329,14 +327,16 @@ func menu(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	log.Println("Server running...")
-	
+
 	myHTTPRouter := mux.NewRouter().StrictSlash(true)
 	myHTTPRouter.HandleFunc("/", menu)
 	myHTTPRouter.HandleFunc("/View", viewTasks)
-	myHTTPRouter.HandleFunc("/api/ViewAll", viewAllTasksAPI)
 	myHTTPRouter.HandleFunc("/Add", addTasks)
-	myHTTPRouter.HandleFunc("/api/Add", addTaskAPI).Methods("POST")
 	myHTTPRouter.HandleFunc("/Delete", deleteTask)
 	myHTTPRouter.HandleFunc("/Modify", modifyTask)
+
+	myHTTPRouter.HandleFunc("/api/Add", addTaskAPI).Methods("POST")
+	myHTTPRouter.HandleFunc("/api/ViewAll", viewAllTasksAPI)
+
 	http.ListenAndServe(":8080", myHTTPRouter)
 }
