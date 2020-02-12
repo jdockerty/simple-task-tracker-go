@@ -99,7 +99,7 @@ resource "aws_elb" "tasktrackerELB" {
 resource "aws_instance" "tasktracker" {
   connection {
     # The default username for our AMI
-    user = "ubuntu"
+    user = "ec2-user"
     host = "${self.public_ip}"
     private_key = "${file("C:\\Users\\Jack\\.ssh\\BusinessInfra.pem")}"
   }
@@ -123,7 +123,10 @@ resource "aws_instance" "tasktracker" {
   # Go code into a Linux binary which is executed afterwards.
   user_data = <<EOT
   #!/bin/bash
-  cd /home/ec2-user/simpletasktrackergo/
+  cd /home/ec2-user/
+  sudo rm -rf simpletasktrackergo
+  git clone https://github.com/jdockerty/simpletasktrackergo.git
+  cd simpletasktrackergo
   go mod download
   sudo go build -v main.go
   sudo ./main &
