@@ -24,3 +24,13 @@ Once deployed, these are available at the HTTP endpoints of:
 
 * `/api/ViewAll`
 * `/api/Add`
+
+### HTTPS and SSL Certificate
+
+This portion serves as my own notes on configuring HTTPS/SSL, as was done with using a registered domain for testing purposes.
+
+*SSL certificate generated through Amazon Certificate Manager, this is then loaded onto the ELB.
+*ELB security group opened to also allow 443 from source 0.0.0.0/0. Alongside keeping the standard HTTP port of 80.
+*The load balancer has an extra listener on port 443, this maps to the instance port of 8080 (SSL Termination).
+*DNS Record in Route53 created, an A record mapping domain to the load balancer (uses alias to point to ELB auto-generated domain name).
+
